@@ -1,4 +1,4 @@
-use std::{io::Write, net::{TcpListener, TcpStream}};
+use std::{io::{Write, Read}, net::{TcpListener, TcpStream}};
 
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -11,7 +11,6 @@ fn main() {
             Ok(stream) => {
                 println!("accepted new connection");
                 respond(stream);
-
             }
             Err(e) => {
                 println!("error: {}", e);
@@ -21,5 +20,10 @@ fn main() {
 }
 
 fn respond(mut stream: TcpStream) {
-    stream.write(b"+PONG\r\n").unwrap();
+    
+    loop {
+        let mut buffer:[u8; 1000] = [0; 1000];
+        stream.read(&mut buffer).unwrap();
+        stream.write(b"+PONG\r\n").unwrap();
+    }
 }
