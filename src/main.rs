@@ -1,7 +1,6 @@
-use std::{io::{Write, Read}, net::{TcpListener, TcpStream}};
+use std::{io::{Write, Read}, net::{TcpListener, TcpStream}, sync::Arc, thread};
 
 fn main() {
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
     println!("Logs from your program will appear here!");
   
     let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
@@ -10,7 +9,10 @@ fn main() {
         match stream {
             Ok(stream) => {
                 println!("accepted new connection");
-                respond(stream);
+                let stream = Arc::new(stream);
+                thread::spawn(move || {
+                    respond(stream);
+                });
             }
             Err(e) => {
                 println!("error: {}", e);
@@ -19,11 +21,19 @@ fn main() {
     }
 }
 
-fn respond(mut stream: TcpStream) {
-    
+fn respond(stream: Arc<TcpStream>) {
+    let mut buffer:[u8; 1000] = [0; 1000];
+    let mut stream = stream.try_clone().unwrap();
     loop {
-        let mut buffer:[u8; 1000] = [0; 1000];
-        stream.read(&mut buffer).unwrap();
-        stream.write(b"+PONG\r\n").unwrap();
+        match stream.read(&mut buffer) {
+            Ok(_) => {
+                let mut stream = stream.try_clone().unwrap();
+                stream.write(b"+PONG\r\n").unwrap();
+            }
+            Err(e) => {
+                println!("error: {}", e);
+                break;
+            }
+        }
     }
 }
